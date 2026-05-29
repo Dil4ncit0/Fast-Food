@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastFood Demand Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-dark: #1a1a1a;
+            --primary-light: #f5f5f5;
+            --accent-yellow: #ffc72c;
+            --accent-red: #d62300;
+            --text-dark: #333;
+            --border-radius: 12px;
+            --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-medium);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: var(--accent-yellow);
+            color: var(--text-dark);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        /* Slider Styles */
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: linear-gradient(to right, #ddd, #ccc);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            cursor: pointer;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: var(--accent-yellow);
+            transform: scale(1.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            cursor: pointer;
+            border: none;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+        }
+
+        .slider::-moz-range-thumb:hover {
+            background: var(--accent-yellow);
+            transform: scale(1.2);
+        }
+
+        /* Select Styles */
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            background: white;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        select:hover {
+            border-color: var(--accent-red);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-red);
+            box-shadow: 0 0 0 3px rgba(214, 35, 0, 0.1);
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            cursor: pointer;
+            margin: 0;
+            z-index: 2;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 28px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: var(--shadow-soft);
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent-yellow);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+            background-color: var(--accent-red);
+        }
+
+        .toggle-label {
+            font-weight: 500;
+            color: var(--text-dark);
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        /* Button Styles */
+        .btn-predict {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-red), #ff4500);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+        }
+
+        .btn-predict:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+            background: linear-gradient(135deg, #ff4500, var(--accent-red));
+        }
+
+        .btn-predict:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-predict:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Result Card */
+        .result-card {
+            margin-top: 30px;
+            padding: 24px;
+            background: linear-gradient(135deg, #fafafa, #f5f5f5);
+            border-radius: var(--border-radius);
+            border-left: 5px solid var(--accent-yellow);
+            box-shadow: var(--shadow-soft);
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .result-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent-red);
+            margin-bottom: 8px;
+        }
+
+        .result-message {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* Error Alert */
+        .error-alert {
+            margin-top: 30px;
+            padding: 16px;
+            background: #fee;
+            border: 2px solid #f88;
+            border-radius: var(--border-radius);
+            color: #c33;
+            font-size: 14px;
+            display: none;
+            animation: shake 0.4s ease;
+        }
+
+        .error-alert.show {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .loading-spinner.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent-red);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #999;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .result-value {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍔 Demand Predictor</h1>
+            <p>Predicción de demanda de hamburguesas en tiempo real</p>
+        </div>
+
+        <form id="predictionForm">
+            <!-- Hora -->
+            <div class="form-group">
+                <label class="form-label">
+                    ⏰ Hora del día
+                    <span class="value-display" id="hourDisplay">12</span>
+                </label>
+                <input type="range" min="0" max="23" value="12" class="slider" id="hour">
+            </div>
+
+            <!-- Temperatura -->
+            <div class="form-group">
+                <label class="form-label">
+                    🌡️ Temperatura (°C)
+                    <span class="value-display" id="tempDisplay">20</span>
+                </label>
+                <input type="range" min="-5" max="40" value="20" class="slider" id="temperature">
+            </div>
+
+            <!-- Día de la Semana -->
+            <div class="form-group">
+                <label class="form-label">📅 Día de la Semana</label>
+                <select id="dayOfWeek">
+                    <option value="0">Lunes</option>
+                    <option value="1">Martes</option>
+                    <option value="2">Miércoles</option>
+                    <option value="3">Jueves</option>
+                    <option value="4">Viernes</option>
+                    <option value="5">Sábado</option>
+                    <option value="6">Domingo</option>
+                </select>
+            </div>
+
+            <!-- Mes -->
+            <div class="form-group">
+                <label class="form-label">📆 Mes</label>
+                <select id="month">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+            </div>
+
+            <!-- Toggle: Lluvia -->
+            <div class="form-group">
+                <label class="form-label">Condiciones Especiales</label>
+                <div class="toggle-group">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="isRaining">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <label class="toggle-label" for="isRaining">☔ ¿Está lloviendo?</label>
+                </div>
+            </div>
+
+            <!-- Toggle: Macro Evento -->
+            <div class="form-group">
+                <div class="toggle-group">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="hasMacroEvent">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <label class="toggle-label" for="hasMacroEvent">🎸 ¿Hay macro evento? (concierto, partido)</label>
+                </div>
+            </div>
+
+            <!-- Toggle: Reunión de Oficina -->
+            <div class="form-group">
+                <div class="toggle-group">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="hasOfficeMeeting">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <label class="toggle-label" for="hasOfficeMeeting">💼 ¿Hay reunión de oficina fuerte?</label>
+                </div>
+            </div>
+
+            <!-- Botón Predicción -->
+            <button type="submit" class="btn-predict" id="submitBtn">🚀 Generar Predicción</button>
+        </form>
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <div class="loading-text">Calculando predicción...</div>
+        </div>
+
+        <!-- Result Card -->
+        <div class="result-card" id="resultCard">
+            <div class="result-label">Hamburguesas Esperadas</div>
+            <div class="result-value" id="resultValue">0</div>
+            <div class="result-message" id="resultMessage"></div>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="error-alert" id="errorAlert"></div>
+    </div>
+
+    <script>
+        // === REFERENCIAS A ELEMENTOS ===
+        const form = document.getElementById('predictionForm');
+        const hourInput = document.getElementById('hour');
+        const temperatureInput = document.getElementById('temperature');
+        const dayOfWeekSelect = document.getElementById('dayOfWeek');
+        const monthSelect = document.getElementById('month');
+        const isRainingCheckbox = document.getElementById('isRaining');
+        const hasMacroEventCheckbox = document.getElementById('hasMacroEvent');
+        const hasOfficeMeetingCheckbox = document.getElementById('hasOfficeMeeting');
+        const submitBtn = document.getElementById('submitBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultCard = document.getElementById('resultCard');
+        const resultValue = document.getElementById('resultValue');
+        const resultMessage = document.getElementById('resultMessage');
+        const errorAlert = document.getElementById('errorAlert');
+        const hourDisplay = document.getElementById('hourDisplay');
+        const tempDisplay = document.getElementById('tempDisplay');
+
+        // === ACTUALIZAR DISPLAYS DE SLIDERS ===
+        hourInput.addEventListener('input', (e) => {
+            hourDisplay.textContent = e.target.value;
+        });
+
+        temperatureInput.addEventListener('input', (e) => {
+            tempDisplay.textContent = e.target.value;
+        });
+
+        // === LÓGICA DE FIN DE SEMANA ===
+        dayOfWeekSelect.addEventListener('change', () => {
+            // Sábado = 5, Domingo = 6
+            const selectedDay = parseInt(dayOfWeekSelect.value);
+            console.log(`Día seleccionado: ${selectedDay}`);
+        });
+
+        // === MANEJO DEL FORMULARIO ===
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Obtener valores del formulario
+            const hour = parseInt(hourInput.value);
+            const dayOfWeek = parseInt(dayOfWeekSelect.value);
+            const month = parseInt(monthSelect.value);
+            const temperature = parseFloat(temperatureInput.value);
+            const isRaining = isRainingCheckbox.checked ? 1 : 0;
+            const hasMacroEvent = hasMacroEventCheckbox.checked ? 1 : 0;
+            const hasOfficeMeeting = hasOfficeMeetingCheckbox.checked ? 1 : 0;
+
+            // Calcular is_weekend (5 = sábado, 6 = domingo)
+            const isWeekend = (dayOfWeek === 5 || dayOfWeek === 6) ? 1 : 0;
+
+            console.log({
+                hour,
+                day_of_week: dayOfWeek,
+                month,
+                is_weekend: isWeekend,
+                temperature_c: temperature,
+                is_raining: isRaining,
+                has_macro_event: hasMacroEvent,
+                has_office_meeting: hasOfficeMeeting
+            });
+
+            // Mostrar spinner, ocultar resultados previos
+            loadingSpinner.classList.add('show');
+            resultCard.classList.remove('show');
+            errorAlert.classList.remove('show');
+            submitBtn.disabled = true;
+
+            try {
+                // Hacer la petición POST
+                const response = await fetch('http://127.0.0.1:8000/predecir_demanda', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hour,
+                        day_of_week: dayOfWeek,
+                        month,
+                        is_weekend: isWeekend,
+                        temperature_c: temperature,
+                        is_raining: isRaining,
+                        has_macro_event: hasMacroEvent,
+                        has_office_meeting: hasOfficeMeeting
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Mostrar resultado
+                resultValue.textContent = data.hamburguesas_esperadas;
+                resultMessage.textContent = data.mensaje;
+                
+                loadingSpinner.classList.remove('show');
+                resultCard.classList.add('show');
+                errorAlert.classList.remove('show');
+
+            } catch (error) {
+                console.error('Error en la petición:', error);
+                
+                // Mostrar error
+                errorAlert.textContent = '❌ No se pudo conectar con el servidor. Asegúrate de que la API esté ejecutándose en http://127.0.0.1:8000';
+                loadingSpinner.classList.remove('show');
+                resultCard.classList.remove('show');
+                errorAlert.classList.add('show');
+
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
